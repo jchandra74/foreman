@@ -1,5 +1,5 @@
 {
-  "name": "new-factory",
+  "name": "foreman",
   "version": "0.1.0",
   "description": "Bounded ticket factory: /run-tickets orchestrates builders, fresh-context reviews, three-strike fix rounds, and serialized merges to an integration branch."
 }

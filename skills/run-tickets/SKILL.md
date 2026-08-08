@@ -30,7 +30,7 @@ if none exists — merges to main are the human's, always).
 ## 2. Dispatch the frontier
 
 For each frontier ticket, spawn a **builder** subagent in parallel (background,
-worktree isolation). The prompt tells it to invoke `/new-factory:implement-ticket` and
+worktree isolation). The prompt tells it to invoke `/foreman:implement-ticket` and
 gives it:
 
 - the ticket file path
