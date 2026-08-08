@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "new-factory",
+  "description": "Bounded ticket factory for Claude Code.",
+  "owner": { "name": "Christopher Chandra" },
+  "plugins": [
+    {
+      "name": "new-factory",
+      "description": "Orchestrated ticket runs: dispatch builders, review in fresh context, merge serially.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
