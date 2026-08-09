@@ -43,10 +43,15 @@ gives it:
 mechanical, well-specified tickets go to Sonnet; ambiguous or user-facing ones go to
 Opus.
 
-**Builders are Claude-only, by construction.** A builder must invoke
-`/foreman:implement-ticket` and return this skill's structured report. The Codex plugin's
-only delegation path (`codex-rescue`) is a thin forwarder that returns Codex's stdout
-verbatim and cannot do either. Never route a ticket build to Codex.
+**Builders default to Claude.** A builder must invoke `/foreman:implement-ticket` and
+return this skill's structured report. Never dispatch a builder through the Codex
+plugin's `codex-rescue` agent — it is a thin forwarder that returns Codex's stdout
+verbatim and can do neither.
+
+A Codex builder *is* possible the other way: a Claude subagent that shells out to
+`codex exec -C <worktree> --output-schema <file> -o <file>`, which enforces the report
+shape at the CLI. It costs you the builder discipline in this plugin's SKILL.md, which
+Codex never loads — inject it into the prompt or don't bother.
 
 Mark the ticket's Status line `in-progress` when dispatched. Status lines in the
 ticket files are the live board — update them at every transition so the user can

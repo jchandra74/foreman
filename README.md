@@ -108,12 +108,16 @@ Opus for ambiguous or user-facing ones, and reviewers to Opus.
 Pass `codex` to `/run-tickets` and reviews run through `/codex:review` instead, giving you
 an independent model grading Claude's diff.
 
-**Builders are Claude-only, and that's structural, not a preference.** A builder has to
-invoke `/foreman:implement-ticket` and return a structured report the orchestrator parses.
-The Codex plugin's only delegation path is a thin forwarder that returns Codex's stdout
-verbatim, so it can do neither. Review is different: `/codex:review` takes the same
-`base..head` range, is read-only, and returns a schema'd verdict — which is exactly the
-reviewer's job.
+**Builders stay on Claude.** A builder has to invoke `/foreman:implement-ticket` and
+return a structured report the orchestrator parses. The Codex plugin's delegation agent
+(`codex-rescue`) is a thin forwarder that returns Codex's stdout verbatim, so it can do
+neither. Review is different: `/codex:review` takes the same `base..head` range, is
+read-only, and returns a schema'd verdict — exactly the reviewer's job.
+
+If you want GPT actually writing ticket code, the route is `codex exec -C <worktree>
+--output-schema <file>`, which enforces the report shape at the CLI, wrapped in a Claude
+subagent that supplies the builder discipline Codex won't load. That's an extension, not
+the default path.
 
 ## Requirements
 
