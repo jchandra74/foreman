@@ -44,6 +44,12 @@ worktree isolation). On the default Claude path the prompt tells it to invoke
 mechanical, well-specified tickets go to Sonnet; ambiguous or user-facing ones go to
 Opus.
 
+With the `codex` argument, route only **mechanical, well-specified** tickets to a Codex
+builder — the ones whose acceptance criteria leave nothing to interpret. Ambiguous or
+user-facing tickets stay on Claude: a Codex builder cannot read this plugin's skills, so
+everything it knows about the job has to fit in one prompt. Per ticket, decide once at
+dispatch and keep that ticket on that runtime through its fix rounds.
+
 **Builders default to Claude**, where the builder invokes `/foreman:implement-ticket` and
 returns this skill's structured report. Never dispatch a builder through the Codex
 plugin's `codex-rescue` agent — it is a thin forwarder that returns Codex's stdout
