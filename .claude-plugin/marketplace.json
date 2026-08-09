@@ -7,8 +7,10 @@
     {
       "name": "foreman",
       "description": "Orchestrated ticket runs: dispatch builders, review in fresh context, merge serially.",
+      "author": { "name": "Christopher Chandra" },
       "source": "./",
-      "category": "productivity"
+      "category": "development",
+      "homepage": "https://github.com/jchandra74/foreman"
     }
   ]
 }
