@@ -55,16 +55,27 @@ claude plugin install foreman
 Inside a running session, the slash-command equivalents are
 `/plugin marketplace add jchandra74/foreman` and `/plugin install foreman@jchandra74`.
 
-**Optional:** install the [Codex plugin](https://github.com/openai/codex-plugin-cc) if you
-want to route mechanical tickets to GPT builders via the `codex` argument.
+**3. Optional — [Codex](https://github.com/openai/codex-plugin-cc)**, to route mechanical
+tickets to GPT builders via the `codex` argument:
+
+```bash
+claude plugin marketplace add openai/codex-plugin-cc
+```
+
+```bash
+claude plugin install codex
+```
 
 ## Usage
 
 ```
 /to-spec          # mattpocock-skills: idea → spec
 /to-tickets       # mattpocock-skills: spec → .scratch/<slug>/issues/NN-*.md
-/foreman:run-tickets <slug>   # foreman: tickets → merged integration branch
+/run-tickets <slug>   # foreman: tickets → merged integration branch
 ```
+
+Plugin skills are namespaced — `/foreman:run-tickets` is the form that always resolves.
+The bare name works too, unless another installed plugin already claims it.
 
 `/run-tickets` will:
 
