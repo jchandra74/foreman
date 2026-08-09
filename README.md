@@ -55,8 +55,8 @@ claude plugin install foreman
 Inside a running session, the slash-command equivalents are
 `/plugin marketplace add jchandra74/foreman` and `/plugin install foreman@jchandra74`.
 
-**3. Optional — [Codex](https://github.com/openai/codex-plugin-cc)**, to route mechanical
-tickets to GPT builders via the `codex` argument:
+**3. Optional — [Codex](https://github.com/openai/codex-plugin-cc)**, to review with GPT
+instead of Claude via the `codex` argument (see [Model routing](#model-routing)):
 
 ```bash
 claude plugin marketplace add openai/codex-plugin-cc
@@ -104,6 +104,16 @@ ad-hoc, single-ticket work by hand, use mattpocock-skills' `/implement` instead.
 foreman defers to a model table in your `CLAUDE.md` if you have one. **You don't need to
 add anything** — without a table, builders default to Sonnet for mechanical tickets and
 Opus for ambiguous or user-facing ones, and reviewers to Opus.
+
+Pass `codex` to `/run-tickets` and reviews run through `/codex:review` instead, giving you
+an independent model grading Claude's diff.
+
+**Builders are Claude-only, and that's structural, not a preference.** A builder has to
+invoke `/foreman:implement-ticket` and return a structured report the orchestrator parses.
+The Codex plugin's only delegation path is a thin forwarder that returns Codex's stdout
+verbatim, so it can do neither. Review is different: `/codex:review` takes the same
+`base..head` range, is read-only, and returns a schema'd verdict — which is exactly the
+reviewer's job.
 
 ## Requirements
 

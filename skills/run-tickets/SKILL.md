@@ -18,8 +18,9 @@ here is each ticket's acceptance criteria — reachable and binary, met or not.
 ## 1. Load the board
 
 The argument names the ticket directory or feature slug (default: newest
-`.scratch/*/issues/`, where mattpocock-skills `/to-tickets` writes local tickets). The run stays on Claude models unless an extra `codex`
-argument opts in Codex/GPT builders and reviewers. Read every ticket file; build the dependency graph from each
+`.scratch/*/issues/`, where mattpocock-skills `/to-tickets` writes local tickets). An
+extra `codex` argument opts in a Codex reviewer; builders always stay on Claude (see
+Model routing). Read every ticket file; build the dependency graph from each
 "Blocked by" line. The **frontier** is every ticket whose blockers are all done and
 whose Status is ready-for-agent.
 
@@ -40,9 +41,12 @@ gives it:
 
 **Model routing.** If the user's CLAUDE.md defines a model table, follow it. Otherwise:
 mechanical, well-specified tickets go to Sonnet; ambiguous or user-facing ones go to
-Opus. Claude models only unless the `codex` argument opted in, which sends
-well-specified mechanical tickets to Codex instead — anything user-facing stays on a
-high-taste model either way.
+Opus.
+
+**Builders are Claude-only, by construction.** A builder must invoke
+`/foreman:implement-ticket` and return this skill's structured report. The Codex plugin's
+only delegation path (`codex-rescue`) is a thin forwarder that returns Codex's stdout
+verbatim and cannot do either. Never route a ticket build to Codex.
 
 Mark the ticket's Status line `in-progress` when dispatched. Status lines in the
 ticket files are the live board — update them at every transition so the user can
@@ -53,6 +57,12 @@ watch the run from the files.
 When a builder reports, spawn a **reviewer** subagent — fresh context, on a review-grade
 model (Opus by default; the user's model table wins if they have one). Give it the
 ticket file, the diff range `base..head`, and repo standards.
+
+With the `codex` argument, run the reviewer through the Codex plugin instead:
+`/codex:review --wait --base <base-sha> --scope branch`. It is read-only and returns a
+schema'd verdict (`approve` / `needs-attention`) plus findings — map `needs-attention`
+onto the findings path below. An independent model reviewing another model's diff is the
+point; use it as the reviewer, or as a second opinion alongside the Claude one.
 The reviewer inspects the real diff and runs the real tests; the builder's report,
 history, and self-assessment stay out of its context. It returns either `clean` or
 findings, each naming a hard violation of an acceptance criterion, a test failure, or
