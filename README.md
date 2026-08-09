@@ -105,19 +105,23 @@ foreman defers to a model table in your `CLAUDE.md` if you have one. **You don't
 add anything** — without a table, builders default to Sonnet for mechanical tickets and
 Opus for ambiguous or user-facing ones, and reviewers to Opus.
 
-Pass `codex` to `/run-tickets` and reviews run through `/codex:review` instead, giving you
-an independent model grading Claude's diff.
+Pass `codex` to `/run-tickets` and GPT joins the run on both sides:
 
-**Builders stay on Claude.** A builder has to invoke `/foreman:implement-ticket` and
-return a structured report the orchestrator parses. The Codex plugin's delegation agent
-(`codex-rescue`) is a thin forwarder that returns Codex's stdout verbatim, so it can do
-neither. Review is different: `/codex:review` takes the same `base..head` range, is
-read-only, and returns a schema'd verdict — exactly the reviewer's job.
+- **Reviews** go through `/codex:review --base <sha> --scope branch` — read-only, same
+  diff range, and it returns a schema'd `approve` / `needs-attention` verdict. An
+  independent vendor's model grading Claude's diff is a stronger check than a same-family
+  reviewer.
+- **Builds** go through the Codex CLI: `codex exec -C <worktree> -s workspace-write
+  --output-schema <file>`, which enforces the report shape at the CLI boundary.
 
-If you want GPT actually writing ticket code, the route is `codex exec -C <worktree>
---output-schema <file>`, which enforces the report shape at the CLI, wrapped in a Claude
-subagent that supplies the builder discipline Codex won't load. That's an extension, not
-the default path.
+Two constraints are baked into how foreman drives Codex, both learned the hard way:
+
+- **Never through `codex-rescue`.** The Codex plugin's delegation agent is a thin
+  forwarder that returns stdout verbatim — it can neither invoke a skill nor return a
+  parseable report.
+- **Codex never runs git.** A linked worktree's index lives outside the sandbox, so
+  Codex's commits either fail or corrupt the index. foreman creates the worktree, commits
+  the result, and reads the SHAs itself.
 
 ## Requirements
 

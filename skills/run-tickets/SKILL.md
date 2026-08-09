@@ -48,10 +48,31 @@ return this skill's structured report. Never dispatch a builder through the Code
 plugin's `codex-rescue` agent — it is a thin forwarder that returns Codex's stdout
 verbatim and can do neither.
 
-A Codex builder *is* possible the other way: a Claude subagent that shells out to
-`codex exec -C <worktree> --output-schema <file> -o <file>`, which enforces the report
-shape at the CLI. It costs you the builder discipline in this plugin's SKILL.md, which
-Codex never loads — inject it into the prompt or don't bother.
+### Codex builders (`codex` argument)
+
+Codex builds through the CLI, not the plugin. It has no worktree isolation of its own,
+and its sandbox cannot write a linked worktree's index — so **you do every git
+operation** and Codex only edits files.
+
+1. Create the worktree and branch yourself:
+   `git worktree add <path> -b ticket/<NN>-<slug> <base-sha>`
+2. Dispatch, in a Claude subagent so the run stays parallel:
+   ```
+   codex exec -C <path> -s workspace-write --output-schema <schema.json> \
+     -o <report.json> "<brief>"
+   ```
+3. The `<brief>` must carry what Codex cannot load from this plugin: the ticket's
+   "What to build" and acceptance criteria, plus the rules — touch only this ticket's
+   files, do not review your own work, do not run any git command.
+4. `<schema.json>` is the report contract from `/foreman:implement-ticket`, minus
+   `branch`/`head`/`base`. Read the result from `<report.json>`.
+5. Stage and commit in the worktree yourself, then record `base` and `head` from your own
+   `git rev-parse`. A builder never reports its own SHA.
+6. Fix rounds: run `codex exec resume --last --output-schema <schema.json> -o
+   <report.json> "<findings>"` from inside the worktree — `resume` takes no `-C`.
+
+Review, three-strike counting, and merging are unchanged. Do not let a Codex builder
+review its own ticket; the reviewer still runs separately in fresh context.
 
 Mark the ticket's Status line `in-progress` when dispatched. Status lines in the
 ticket files are the live board — update them at every transition so the user can
