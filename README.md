@@ -34,21 +34,26 @@ keeps the ticket-sized scope and automates the dispatching, with three guardrail
 
 ## Install
 
-**1. Prerequisite — mattpocock-skills:**
+**1. Prerequisite — [mattpocock-skills](https://www.aihero.dev/skills):**
 
-```
-/plugin marketplace add anthropics/claude-plugins-official
-/plugin install mattpocock-skills@claude-plugins-official
+```bash
+claude plugin install mattpocock-skills
 ```
 
 Then run `/setup-matt-pocock-skills` once per project to configure its issue tracker.
 
 **2. foreman:**
 
+```bash
+claude plugin marketplace add jchandra74/foreman
 ```
-/plugin marketplace add jchandra74/foreman
-/plugin install foreman@jchandra74
+
+```bash
+claude plugin install foreman
 ```
+
+Inside a running session, the slash-command equivalents are
+`/plugin marketplace add jchandra74/foreman` and `/plugin install foreman@jchandra74`.
 
 **Optional:** install the [Codex plugin](https://github.com/openai/codex-plugin-cc) if you
 want to route mechanical tickets to GPT builders via the `codex` argument.
