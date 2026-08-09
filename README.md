@@ -55,16 +55,16 @@ claude plugin install foreman
 Inside a running session, the slash-command equivalents are
 `/plugin marketplace add jchandra74/foreman` and `/plugin install foreman@jchandra74`.
 
-**3. Optional — [Codex](https://github.com/openai/codex-plugin-cc)**, to review with GPT
-instead of Claude via the `codex` argument (see [Model routing](#model-routing)):
+**3. Optional — the [Codex CLI](https://github.com/openai/codex)**, to put GPT builders
+and reviewers in the run via the `codex` argument (see [Model routing](#model-routing)).
+Install it, then log in:
 
 ```bash
-claude plugin marketplace add openai/codex-plugin-cc
+codex login
 ```
 
-```bash
-claude plugin install codex
-```
+foreman drives the `codex` binary directly. You do **not** need the Codex *plugin* for
+Claude Code — see [Model routing](#model-routing) for why.
 
 ## Usage
 
@@ -105,23 +105,27 @@ foreman defers to a model table in your `CLAUDE.md` if you have one. **You don't
 add anything** — without a table, builders default to Sonnet for mechanical tickets and
 Opus for ambiguous or user-facing ones, and reviewers to Opus.
 
-Pass `codex` to `/run-tickets` and GPT joins the run on both sides:
+Pass `codex` to `/run-tickets` and GPT joins the run on both sides — builders for
+mechanical, well-specified tickets, and reviewers grading Claude's diffs. Both go through
+`codex exec … --output-schema`, which enforces the report shape at the process boundary.
 
-- **Reviews** go through `/codex:review --base <sha> --scope branch` — read-only, same
-  diff range, and it returns a schema'd `approve` / `needs-attention` verdict. An
-  independent vendor's model grading Claude's diff is a stronger check than a same-family
-  reviewer.
-- **Builds** go through the Codex CLI: `codex exec -C <worktree> -s workspace-write
-  --output-schema <file>`, which enforces the report shape at the CLI boundary.
+**foreman never uses the Codex plugin for Claude Code**, only the `codex` CLI. That isn't
+a preference — the plugin's two entry points are both unusable by an orchestrator:
+`codex-rescue` is a thin forwarder that returns stdout verbatim, and `/codex:review` is
+`disable-model-invocation: true`, so a human can type it but an agent cannot call it. One
+mechanism, no ambiguity. The plugin is still worth having for your own interactive use;
+it just plays no part in a run.
 
-Two constraints are baked into how foreman drives Codex, both learned the hard way:
+Three constraints, each learned by breaking it:
 
-- **Never through `codex-rescue`.** The Codex plugin's delegation agent is a thin
-  forwarder that returns stdout verbatim — it can neither invoke a skill nor return a
-  parseable report.
-- **Codex never runs git.** A linked worktree's index lives outside the sandbox, so
-  Codex's commits either fail or corrupt the index. foreman creates the worktree, commits
-  the result, and reads the SHAs itself.
+- **Codex never runs git.** A linked worktree's index lives outside its sandbox, so
+  Codex's commits either fail on `index.lock` or land via plumbing and leave the index
+  corrupt. foreman creates the worktree, commits the result, and reads the SHAs itself.
+- **`--ignore-user-config` on every invocation.** Otherwise the run inherits your personal
+  Codex MCP servers and skills; an unguarded review here wandered into a browser session
+  and timed out.
+- **Plain `codex exec`, not `codex exec review`.** The `review` subcommand ignores
+  `--output-schema` and returns prose.
 
 ## Requirements
 

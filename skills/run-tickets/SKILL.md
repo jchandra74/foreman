@@ -51,9 +51,13 @@ everything it knows about the job has to fit in one prompt. Per ticket, decide o
 dispatch and keep that ticket on that runtime through its fix rounds.
 
 **Builders default to Claude**, where the builder invokes `/foreman:implement-ticket` and
-returns this skill's structured report. Never dispatch a builder through the Codex
-plugin's `codex-rescue` agent — it is a thin forwarder that returns Codex's stdout
-verbatim and can do neither.
+returns this skill's structured report.
+
+**Codex is always reached through the `codex` CLI, never the Codex plugin.** The plugin's
+`codex-rescue` agent is a thin forwarder that returns stdout verbatim, and its
+`/codex:review` command is `disable-model-invocation: true` — a human can type it, an
+orchestrator cannot call it. Pass `--ignore-user-config` on every Codex invocation so a
+run does not inherit the user's personal MCP servers and skills, which can derail it.
 
 ### Codex builders (`codex` argument)
 
@@ -65,18 +69,19 @@ operation** and Codex only edits files.
    `git worktree add <path> -b ticket/<NN>-<slug> <base-sha>`
 2. Dispatch, in a Claude subagent so the run stays parallel:
    ```
-   codex exec -C <path> -s workspace-write --output-schema <schema.json> \
-     -o <report.json> "<brief>"
+   codex exec -C <path> --ignore-user-config -s workspace-write \
+     --output-schema <schema-file> -o <report-file> "<brief>"
    ```
+   `--output-schema` reads the contract, `-o` writes the result — never the same path.
 3. The `<brief>` must carry what Codex cannot load from this plugin: the ticket's
    "What to build" and acceptance criteria, plus the rules — touch only this ticket's
    files, do not review your own work, do not run any git command.
-4. `<schema.json>` is the report contract from `/foreman:implement-ticket`, minus
-   `branch`/`head`/`base`. Read the result from `<report.json>`.
+4. `<schema-file>` is the report contract from `/foreman:implement-ticket`, minus
+   `branch`/`head`/`base`. Read the result from `<report-file>`.
 5. Stage and commit in the worktree yourself, then record `base` and `head` from your own
    `git rev-parse`. A builder never reports its own SHA.
-6. Fix rounds: run `codex exec resume --last --output-schema <schema.json> -o
-   <report.json> "<findings>"` from inside the worktree — `resume` takes no `-C`.
+6. Fix rounds: run `codex exec resume --last --output-schema <schema-file> -o
+   <report-file> "<findings>"` from inside the worktree — `resume` takes no `-C`.
 
 Review, three-strike counting, and merging are unchanged. Do not let a Codex builder
 review its own ticket; the reviewer still runs separately in fresh context.
@@ -91,11 +96,18 @@ When a builder reports, spawn a **reviewer** subagent — fresh context, on a re
 model (Opus by default; the user's model table wins if they have one). Give it the
 ticket file, the diff range `base..head`, and repo standards.
 
-With the `codex` argument, run the reviewer through the Codex plugin instead:
-`/codex:review --wait --base <base-sha> --scope branch`. It is read-only and returns a
-schema'd verdict (`approve` / `needs-attention`) plus findings — map `needs-attention`
-onto the findings path below. An independent model reviewing another model's diff is the
-point; use it as the reviewer, or as a second opinion alongside the Claude one.
+With the `codex` argument, run the reviewer through the CLI from inside the worktree
+(`review` takes no `-C`):
+
+```
+codex exec --ignore-user-config -s read-only --output-schema <schema-file> \
+  -o <findings-file> "<review brief with the ticket, base..head, and repo standards>"
+```
+
+Use plain `codex exec`, **not** `codex exec review` — the `review` subcommand ignores
+`--output-schema` and returns prose. An independent vendor's model reviewing Claude's
+diff is the point; run it as the reviewer, or alongside the Claude one for a second
+opinion.
 The reviewer inspects the real diff and runs the real tests; the builder's report,
 history, and self-assessment stay out of its context. It returns either `clean` or
 findings, each naming a hard violation of an acceptance criterion, a test failure, or
@@ -103,8 +115,8 @@ a correctness bug — judgement-call smells are advisory only.
 
 ## 4. Fix rounds — three strikes
 
-Findings go back to the same builder (SendMessage) with only the findings; it fixes
-only those, then re-review. A ticket gets **three rounds total** (build + two fixes).
+Findings go back to the same builder with only the findings — SendMessage for a Claude
+builder, `codex exec resume --last` for a Codex one; it fixes only those, then re-review. A ticket gets **three rounds total** (build + two fixes).
 On the third failed review, or when a builder reports `blocked` in notes, set Status
 `blocked`, record why in the ticket file, and move on — blocked tickets are the
 human's queue, and everything they block stays off the frontier.
