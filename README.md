@@ -47,10 +47,8 @@ Then run `/setup-matt-pocock-skills` once per project to configure its issue tra
 
 ```
 /plugin marketplace add jchandra74/foreman
-/plugin install foreman@foreman
+/plugin install foreman@jchandra74
 ```
-
-(`foreman@foreman` is `plugin-name@marketplace-name` — both happen to be `foreman` here.)
 
 **Optional:** install the [Codex plugin](https://github.com/openai/codex-plugin-cc) if you
 want to route mechanical tickets to GPT builders via the `codex` argument.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "foreman",
-  "description": "Bounded ticket factory for Claude Code.",
+  "name": "jchandra74",
+  "description": "Christopher Chandra's Claude Code plugins.",
   "owner": { "name": "Christopher Chandra" },
   "plugins": [
     {
