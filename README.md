@@ -1,60 +1,101 @@
 # foreman
 
-A bounded ticket factory for [Claude Code](https://claude.com/claude-code). `/run-tickets`
-orchestrates parallel builder subagents, reviews their work in fresh context, and merges
-clean tickets serially into an integration branch — no self-review, no open-ended
-"keep improving" loop.
+An automated software factory for [Claude Code](https://claude.com/claude-code) — the
+missing execution half of the [mattpocock-skills](https://www.aihero.dev/skills) ticket
+toolchain.
 
-This is a **Claude Code plugin** (marketplace manifest + skills). It is not a standalone
-CLI and doesn't install into Codex, opencode, or other agent runtimes.
+Matt Pocock's skills take you from an idea to a set of well-formed, dependency-ordered
+tickets (`/to-spec` → `/to-tickets`), then hand each one to a human who runs `/implement`
+and `/code-review` by hand, ticket by ticket. **foreman runs that loop for you**:
+`/run-tickets` dispatches every unblocked ticket to a builder subagent in parallel,
+reviews each result in a fresh context, and merges clean tickets serially into an
+integration branch.
 
-## What it does
+> **mattpocock-skills is a hard requirement, not a suggestion.** foreman consumes its
+> ticket format and calls its skills (`/tdd`, `/resolving-merge-conflicts`). Without it
+> installed, these skills have nothing to run on.
 
-- **You** write tickets (one file per ticket, with a "What to build", acceptance
-  criteria, and "Blocked by" dependencies) into a `to-tickets` directory.
-- **`/run-tickets`** (orchestrator) reads the board, dispatches every unblocked ticket
-  to a builder subagent in its own worktree/branch, and never writes feature code
-  itself.
-- **`implement-ticket`** (builder) builds one ticket, commits to its own branch, and
-  reports back — it never reviews its own work or merges.
-- The orchestrator sends each builder's diff to a reviewer in a fresh context (no
-  access to the builder's reasoning). Findings go back for up to two fix rounds; a
-  ticket that fails three times is marked `blocked` for a human.
-- Clean tickets merge one at a time (`--no-ff`) into an integration branch, with the
-  full test suite run after each merge. You merge that branch to `main` yourself.
+This is a Claude Code plugin (marketplace manifest + skills). It is not a standalone CLI
+and does not install into Codex, opencode, or other agent runtimes.
+
+## Why
+
+Handing an agent a whole feature produces sprawl. Handing it one ticket at a time works,
+but you become the dispatcher — babysitting each build, each review, each merge. foreman
+keeps the ticket-sized scope and automates the dispatching, with three guardrails:
+
+- **No self-review.** The builder never grades its own work. Reviewers run in a fresh
+  context that never sees the builder's reasoning, only the real diff and the real tests.
+- **Bounded.** The run ends when every ticket is merged or blocked. There is no
+  open-ended "keep improving" phase. Each ticket gets three rounds (build + two fixes)
+  before it's marked `blocked` for a human.
+- **Serialized merges.** One `--no-ff` merge at a time into an integration branch, full
+  test suite after each. Merges to `main` are always yours.
 
 ## Install
 
-Add this repo as a plugin marketplace, then install the plugin:
+**1. Prerequisite — mattpocock-skills:**
+
+```
+/plugin marketplace add anthropics/claude-plugins-official
+/plugin install mattpocock-skills@claude-plugins-official
+```
+
+Then run `/setup-matt-pocock-skills` once per project to configure its issue tracker.
+
+**2. foreman:**
 
 ```
 /plugin marketplace add jchandra74/foreman
 /plugin install foreman@foreman
 ```
 
+(`foreman@foreman` is `plugin-name@marketplace-name` — both happen to be `foreman` here.)
+
+**Optional:** install the [Codex plugin](https://github.com/openai/codex-plugin-cc) if you
+want to route mechanical tickets to GPT builders via the `codex` argument.
+
 ## Usage
 
-1. Write your tickets into a directory (default: newest `.scratch/*/issues/`), each
-   with a Status line, acceptance criteria, and "Blocked by" references to other
-   tickets.
-2. Run the orchestrator, pointing it at that directory or a feature slug:
-   ```
-   /foreman:run-tickets <ticket-dir-or-slug>
-   ```
-3. Confirm the ticket count, frontier, and integration branch when asked.
-4. Watch progress via the Status lines in the ticket files as builders, reviewers,
-   and merges run.
-5. When the run ends, merge the reported integration branch into `main` yourself, or
-   unblock any blocked tickets and rerun.
+```
+/to-spec          # mattpocock-skills: idea → spec
+/to-tickets       # mattpocock-skills: spec → .scratch/<slug>/issues/NN-*.md
+/foreman:run-tickets <slug>   # foreman: tickets → merged integration branch
+```
 
-`implement-ticket` is invoked by the orchestrator, not run directly — a human doing
-ad-hoc implementation should use their own `/implement` workflow instead.
+`/run-tickets` will:
+
+1. Read every ticket, build the dependency graph from each "Blocked by" line, and compute
+   the **frontier** — tickets whose blockers are all done and whose Status is
+   `ready-for-agent`.
+2. Confirm with you before spending compute: ticket count, frontier, integration branch.
+3. Dispatch each frontier ticket to a builder in its own git worktree and branch
+   (`ticket/<NN>-<slug>`). Builders commit only to their own branch — never merge, never
+   push, never touch `main`.
+4. Review each finished build in fresh context. Findings go back to the same builder,
+   which fixes only what was flagged.
+5. Merge clean tickets serially, recompute the frontier, and dispatch anything newly
+   unblocked.
+6. Report merged tickets, blocked tickets with reasons, and the integration branch's
+   test status.
+
+The ticket files are the live board — Status lines update at every transition, so you can
+watch the run from the files.
+
+`implement-ticket` is the builder half and is invoked by the orchestrator, not by you. For
+ad-hoc, single-ticket work by hand, use mattpocock-skills' `/implement` instead.
+
+## Model routing
+
+foreman defers to a model table in your `CLAUDE.md` if you have one. **You don't need to
+add anything** — without a table, builders default to Sonnet for mechanical tickets and
+Opus for ambiguous or user-facing ones, and reviewers to Opus.
 
 ## Requirements
 
-- Claude Code with plugin support.
-- A git repository for the target project (builders work in isolated worktrees and
-  branches).
+- Claude Code with plugin support
+- mattpocock-skills (see Install)
+- A git repository — builders work in isolated worktrees and branches
 
 ## License
 

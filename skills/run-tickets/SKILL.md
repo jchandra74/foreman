@@ -18,7 +18,7 @@ here is each ticket's acceptance criteria — reachable and binary, met or not.
 ## 1. Load the board
 
 The argument names the ticket directory or feature slug (default: newest
-`.scratch/*/issues/`). The run stays on Claude models unless an extra `codex`
+`.scratch/*/issues/`, where mattpocock-skills `/to-tickets` writes local tickets). The run stays on Claude models unless an extra `codex`
 argument opts in Codex/GPT builders and reviewers. Read every ticket file; build the dependency graph from each
 "Blocked by" line. The **frontier** is every ticket whose blockers are all done and
 whose Status is ready-for-agent.
@@ -38,10 +38,11 @@ gives it:
   (branches survive worktree cleanup; worktree state does not)
 - the base SHA it branches from
 
-Route models per the global model table, Claude models only by default — mechanical
-tickets go to the cheapest Claude the table's rules allow. With the `codex` opt-in, a
-well-specified mechanical ticket can go to Codex instead; anything user-facing needs
-taste either way.
+**Model routing.** If the user's CLAUDE.md defines a model table, follow it. Otherwise:
+mechanical, well-specified tickets go to Sonnet; ambiguous or user-facing ones go to
+Opus. Claude models only unless the `codex` argument opted in, which sends
+well-specified mechanical tickets to Codex instead — anything user-facing stays on a
+high-taste model either way.
 
 Mark the ticket's Status line `in-progress` when dispatched. Status lines in the
 ticket files are the live board — update them at every transition so the user can
@@ -49,9 +50,9 @@ watch the run from the files.
 
 ## 3. Review in fresh context
 
-When a builder reports, spawn a **reviewer** subagent — fresh context, model per the
-global table's review row. Give it the ticket file, the diff range `base..head`, and
-repo standards.
+When a builder reports, spawn a **reviewer** subagent — fresh context, on a review-grade
+model (Opus by default; the user's model table wins if they have one). Give it the
+ticket file, the diff range `base..head`, and repo standards.
 The reviewer inspects the real diff and runs the real tests; the builder's report,
 history, and self-assessment stay out of its context. It returns either `clean` or
 findings, each naming a hard violation of an acceptance criterion, a test failure, or
