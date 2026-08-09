@@ -1,5 +1,7 @@
 {
   "name": "foreman",
   "version": "0.1.0",
-  "description": "Bounded ticket factory: /run-tickets orchestrates builders, fresh-context reviews, three-strike fix rounds, and serialized merges to an integration branch."
+  "description": "Bounded ticket factory: /run-tickets orchestrates builders, fresh-context reviews, three-strike fix rounds, and serialized merges to an integration branch.",
+  "author": { "name": "Christopher Chandra" },
+  "license": "MIT"
 }
