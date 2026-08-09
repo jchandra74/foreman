@@ -56,8 +56,15 @@ returns this skill's structured report.
 **Codex is always reached through the `codex` CLI, never the Codex plugin.** The plugin's
 `codex-rescue` agent is a thin forwarder that returns stdout verbatim, and its
 `/codex:review` command is `disable-model-invocation: true` — a human can type it, an
-orchestrator cannot call it. Pass `--ignore-user-config` on every Codex invocation so a
-run does not inherit the user's personal MCP servers and skills, which can derail it.
+orchestrator cannot call it.
+
+Every Codex invocation needs two things, both non-obvious:
+
+- `-c mcp_servers={}` — suppresses the user's personal MCP servers, which otherwise load
+  into the run and can derail it. Do **not** use `--ignore-user-config` for this: it also
+  drops the user's `[projects] trust_level` entries, leaving the workspace untrusted so
+  every write is rejected and the builder reports `blocked` having done nothing.
+- `< /dev/null` — with no TTY, `codex exec` blocks waiting on stdin and never returns.
 
 ### Codex builders (`codex` argument)
 
@@ -69,8 +76,8 @@ operation** and Codex only edits files.
    `git worktree add <path> -b ticket/<NN>-<slug> <base-sha>`
 2. Dispatch, in a Claude subagent so the run stays parallel:
    ```
-   codex exec -C <path> --ignore-user-config -s workspace-write \
-     --output-schema <schema-file> -o <report-file> "<brief>"
+   codex exec -C <path> -c mcp_servers={} -s workspace-write \
+     --output-schema <schema-file> -o <report-file> "<brief>" < /dev/null
    ```
    `--output-schema` reads the contract, `-o` writes the result — never the same path.
 3. The `<brief>` must carry what Codex cannot load from this plugin: the ticket's
@@ -100,8 +107,8 @@ With the `codex` argument, run the reviewer through the CLI from inside the work
 (`review` takes no `-C`):
 
 ```
-codex exec --ignore-user-config -s read-only --output-schema <schema-file> \
-  -o <findings-file> "<review brief with the ticket, base..head, and repo standards>"
+codex exec -c mcp_servers={} -s read-only --output-schema <schema-file> \
+  -o <findings-file> "<review brief: ticket, base..head, repo standards>" < /dev/null
 ```
 
 Use plain `codex exec`, **not** `codex exec review` — the `review` subcommand ignores

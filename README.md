@@ -121,9 +121,12 @@ Three constraints, each learned by breaking it:
 - **Codex never runs git.** A linked worktree's index lives outside its sandbox, so
   Codex's commits either fail on `index.lock` or land via plumbing and leave the index
   corrupt. foreman creates the worktree, commits the result, and reads the SHAs itself.
-- **`--ignore-user-config` on every invocation.** Otherwise the run inherits your personal
-  Codex MCP servers and skills; an unguarded review here wandered into a browser session
-  and timed out.
+- **`-c mcp_servers={}` and `< /dev/null` on every invocation.** Without the first, the
+  run inherits your personal Codex MCP servers — an unguarded review here wandered into a
+  browser session and timed out. Without the second, `codex exec` blocks forever waiting
+  on stdin. Note it is *not* `--ignore-user-config`: that also drops your
+  `[projects] trust_level` entries, so every write is rejected and the builder reports
+  `blocked` having changed nothing.
 - **Plain `codex exec`, not `codex exec review`.** The `review` subcommand ignores
   `--output-schema` and returns prose.
 
