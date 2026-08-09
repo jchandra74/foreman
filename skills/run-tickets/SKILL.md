@@ -80,6 +80,8 @@ operation** and Codex only edits files.
      --output-schema <schema-file> -o <report-file> "<brief>" < /dev/null
    ```
    `--output-schema` reads the contract, `-o` writes the result — never the same path.
+   Capture the run's stdout: its header carries `session id: <uuid>`. Record that against
+   the ticket; fix rounds need it.
 3. The `<brief>` must carry what Codex cannot load from this plugin: the ticket's
    "What to build" and acceptance criteria, plus the rules — touch only this ticket's
    files, do not review your own work, do not run any git command.
@@ -87,8 +89,14 @@ operation** and Codex only edits files.
    `branch`/`head`/`base`. Read the result from `<report-file>`.
 5. Stage and commit in the worktree yourself, then record `base` and `head` from your own
    `git rev-parse`. A builder never reports its own SHA.
-6. Fix rounds: run `codex exec resume --last --output-schema <schema-file> -o
-   <report-file> "<findings>"` from inside the worktree — `resume` takes no `-C`.
+6. Fix rounds: resume that ticket's own session **by id**, from inside its worktree
+   (`resume` takes no `-C`):
+   ```
+   codex exec resume <session-id> -c mcp_servers={} \
+     --output-schema <schema-file> -o <report-file> "<findings>" < /dev/null
+   ```
+   Never `--last` — "last" is global across the machine, so with builders running in
+   parallel it resumes whichever session finished most recently, not this ticket's.
 
 Review, three-strike counting, and merging are unchanged. Do not let a Codex builder
 review its own ticket; the reviewer still runs separately in fresh context.
@@ -123,7 +131,8 @@ a correctness bug — judgement-call smells are advisory only.
 ## 4. Fix rounds — three strikes
 
 Findings go back to the same builder with only the findings — SendMessage for a Claude
-builder, `codex exec resume --last` for a Codex one; it fixes only those, then re-review. A ticket gets **three rounds total** (build + two fixes).
+builder, `codex exec resume <session-id>` for a Codex one; it fixes only those, then
+re-review. A ticket gets **three rounds total** (build + two fixes).
 On the third failed review, or when a builder reports `blocked` in notes, set Status
 `blocked`, record why in the ticket file, and move on — blocked tickets are the
 human's queue, and everything they block stays off the frontier.

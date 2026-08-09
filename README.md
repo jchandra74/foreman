@@ -109,6 +109,14 @@ Pass `codex` to `/run-tickets` and GPT joins the run on both sides — builders 
 mechanical, well-specified tickets, and reviewers grading Claude's diffs. Both go through
 `codex exec … --output-schema`, which enforces the report shape at the process boundary.
 
+> **The `codex` path is experimental.** One full loop has been run end to end — build,
+> commit, review, fix round, re-review, merge — on a single ticket, on Windows, with
+> `gpt-5.6-sol`. Never exercised: two Codex builders in parallel, tickets bigger than a
+> function, and any machine but the author's. Codex honoring "do not run git" is a prompt
+> instruction, not a sandbox guarantee, and if it ever does run git in a linked worktree
+> it corrupts the index. Use it on work you would be happy to throw away. The Claude path
+> is the default for a reason.
+
 **foreman never uses the Codex plugin for Claude Code**, only the `codex` CLI. That isn't
 a preference — the plugin's two entry points are both unusable by an orchestrator:
 `codex-rescue` is a thin forwarder that returns stdout verbatim, and `/codex:review` is
