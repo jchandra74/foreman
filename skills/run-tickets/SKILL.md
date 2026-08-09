@@ -19,8 +19,9 @@ here is each ticket's acceptance criteria — reachable and binary, met or not.
 
 The argument names the ticket directory or feature slug (default: newest
 `.scratch/*/issues/`, where mattpocock-skills `/to-tickets` writes local tickets). An
-extra `codex` argument opts in a Codex reviewer; builders always stay on Claude (see
-Model routing). Read every ticket file; build the dependency graph from each
+extra `codex` argument opts in Codex reviewers and Codex builders (see Model routing —
+each is driven through the Codex CLI, never the plugin's `codex-rescue` agent). Read
+every ticket file; build the dependency graph from each
 "Blocked by" line. The **frontier** is every ticket whose blockers are all done and
 whose Status is ready-for-agent.
 
@@ -31,8 +32,8 @@ if none exists — merges to main are the human's, always).
 ## 2. Dispatch the frontier
 
 For each frontier ticket, spawn a **builder** subagent in parallel (background,
-worktree isolation). The prompt tells it to invoke `/foreman:implement-ticket` and
-gives it:
+worktree isolation). On the default Claude path the prompt tells it to invoke
+`/foreman:implement-ticket` and gives it:
 
 - the ticket file path
 - its branch to own: `ticket/<NN>-<slug>`, created off the integration branch
@@ -43,8 +44,8 @@ gives it:
 mechanical, well-specified tickets go to Sonnet; ambiguous or user-facing ones go to
 Opus.
 
-**Builders default to Claude.** A builder must invoke `/foreman:implement-ticket` and
-return this skill's structured report. Never dispatch a builder through the Codex
+**Builders default to Claude**, where the builder invokes `/foreman:implement-ticket` and
+returns this skill's structured report. Never dispatch a builder through the Codex
 plugin's `codex-rescue` agent — it is a thin forwarder that returns Codex's stdout
 verbatim and can do neither.
 
